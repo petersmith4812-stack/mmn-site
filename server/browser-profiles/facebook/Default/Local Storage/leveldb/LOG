@@ -1,0 +1,33 @@
+2026/05/17-11:38:40.097 6b84 Reusing MANIFEST C:\Users\T480s\Downloads\website files\mmn-site\mmn-site\server\browser-profiles\facebook\Default\Local Storage\leveldb/MANIFEST-000001
+2026/05/17-11:38:40.129 6b84 Recovering log #3
+2026/05/17-11:38:40.135 6b84 Reusing old log C:\Users\T480s\Downloads\website files\mmn-site\mmn-site\server\browser-profiles\facebook\Default\Local Storage\leveldb/000003.log 
+2026/05/17-11:40:40.889 80fc Level-0 table #5: started
+2026/05/17-11:40:40.894 80fc Level-0 table #5: 19565 bytes OK
+2026/05/17-11:40:40.897 80fc Delete type=0 #3
+2026/05/17-11:42:40.890 6b84 Level-0 table #7: started
+2026/05/17-11:42:40.902 6b84 Level-0 table #7: 24558 bytes OK
+2026/05/17-11:42:40.906 6b84 Delete type=0 #4
+2026/05/17-11:44:40.890 6b84 Level-0 table #9: started
+2026/05/17-11:44:40.896 6b84 Level-0 table #9: 25076 bytes OK
+2026/05/17-11:44:40.898 6b84 Delete type=0 #6
+2026/05/17-11:46:40.890 6b84 Level-0 table #11: started
+2026/05/17-11:46:40.896 6b84 Level-0 table #11: 25353 bytes OK
+2026/05/17-11:46:40.900 6b84 Delete type=0 #8
+2026/05/17-11:48:40.890 80fc Level-0 table #13: started
+2026/05/17-11:48:40.897 80fc Level-0 table #13: 24715 bytes OK
+2026/05/17-11:48:40.901 80fc Delete type=0 #10
+2026/05/17-11:50:40.899 80fc Level-0 table #15: started
+2026/05/17-11:50:40.907 80fc Level-0 table #15: 24163 bytes OK
+2026/05/17-11:50:40.910 80fc Delete type=0 #12
+2026/05/17-11:50:40.915 80fc Compacting 4@0 + 1@1 files
+2026/05/17-11:50:40.933 80fc Generated table #16@0: 269 keys, 121246 bytes
+2026/05/17-11:50:40.934 80fc Compacted 4@0 + 1@1 files => 121246 bytes
+2026/05/17-11:50:40.935 80fc compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/05/17-11:50:40.937 80fc Delete type=2 #7
+2026/05/17-11:50:40.937 80fc Delete type=2 #9
+2026/05/17-11:50:40.937 80fc Delete type=2 #11
+2026/05/17-11:50:40.937 80fc Delete type=2 #13
+2026/05/17-11:50:40.938 80fc Delete type=2 #15
+2026/05/17-11:52:10.299 6b84 Level-0 table #18: started
+2026/05/17-11:52:10.306 6b84 Level-0 table #18: 26301 bytes OK
+2026/05/17-11:52:10.308 6b84 Delete type=0 #14

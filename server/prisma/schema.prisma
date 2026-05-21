@@ -1,0 +1,493 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ── Multi-tenancy ─────────────────────────────────────────────────────────────
+model School {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  timezone  String   @default("Asia/Karachi")
+  country   String   @default("PK")
+  city      String?
+  address   String?
+  phone     String?
+  email     String?
+  logoUrl   String?
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  students      Student[]
+  parents       Parent[]
+  leads         Lead[]
+  academicYears AcademicYear[]
+  classes       Class[]
+  staff         Staff[]
+  invoices      Invoice[]
+  feeStructures FeeStructure[]
+  campaigns     Campaign[]
+  blogs         Blog[]
+  auditLogs     AuditLog[]
+
+  @@map("schools")
+}
+
+// ── Admin Users ───────────────────────────────────────────────────────────────
+model User {
+  id           String   @id @default(cuid())
+  schoolId     String
+  school       School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  name         String
+  email        String
+  passwordHash String
+  role         UserRole @default(EDITOR)
+  avatar       String   @default("👤")
+  active       Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]   @relation("AuditUser")
+  assignedLeads Lead[]        @relation("LeadAssignee")
+
+  @@unique([schoolId, email])
+  @@map("users")
+}
+
+enum UserRole {
+  SUPERADMIN
+  PRINCIPAL
+  TEACHER
+  TEACHER_ASSISTANT
+  CRM_AGENT
+  PARENT_LIAISON
+  FINANCE_OFFICER
+  HR_MANAGER
+  CONTENT_EDITOR
+  ANALYTICS_VIEWER
+  EDITOR
+  VIEWER
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+// ── Students ──────────────────────────────────────────────────────────────────
+model Student {
+  id             String        @id @default(cuid())
+  schoolId       String
+  school         School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  firstName      String
+  lastName       String
+  dateOfBirth    DateTime?
+  gender         Gender?
+  photoUrl       String?
+  admissionNo    String?
+  enrolledAt     DateTime?
+  status         StudentStatus @default(ACTIVE)
+  programType    ProgramType?
+  classId        String?
+  class          Class?        @relation(fields: [classId], references: [id])
+  allergies      String[]      @default([])
+  medicalNotes   String?
+  emergencyContact String?
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  parents         StudentParent[]
+  enrollments     Enrollment[]
+  attendances     Attendance[]
+  progressRecords ProgressRecord[]
+  behaviourLogs   BehaviourLog[]
+  nutritionLogs   NutritionLog[]
+
+  @@map("students")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum StudentStatus {
+  INQUIRY
+  APPLIED
+  WAITLISTED
+  ENROLLED
+  ACTIVE
+  GRADUATED
+  WITHDRAWN
+  INACTIVE
+}
+
+enum ProgramType {
+  PRESCHOOL
+  AFTERSCHOOL_CLUB
+  MOTHERS_PROGRAMME
+}
+
+// ── Parents ───────────────────────────────────────────────────────────────────
+model Parent {
+  id                 String   @id @default(cuid())
+  schoolId           String
+  school             School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  firstName          String
+  lastName           String
+  email              String?
+  phone              String?
+  whatsapp           String?
+  occupation         String?
+  photoUrl           String?
+  portalEnabled      Boolean  @default(false)
+  portalPasswordHash String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  children StudentParent[]
+
+  @@map("parents")
+}
+
+model StudentParent {
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  parentId  String
+  parent    Parent  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  relation  String  @default("mother")
+  isPrimary Boolean @default(false)
+
+  @@unique([studentId, parentId])
+  @@map("student_parents")
+}
+
+// ── CRM Leads ─────────────────────────────────────────────────────────────────
+model Lead {
+  id              String     @id @default(cuid())
+  schoolId        String
+  school          School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  name            String
+  email           String?
+  phone           String?
+  whatsapp        String?
+  childName       String?
+  childAge        String?
+  programInterest String?
+  source          String?
+  message         String?
+  status          LeadStatus @default(NEW)
+  priority        Priority   @default(MEDIUM)
+  tags            String[]   @default([])
+  assignedToId    String?
+  assignedTo      User?      @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  visitDate       DateTime?
+  followUpDate    DateTime?
+  notes           String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  activities LeadActivity[]
+
+  @@map("leads")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  VISIT_BOOKED
+  MEETING_DONE
+  ENROLLED
+  COLD
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model LeadActivity {
+  id     String   @id @default(cuid())
+  leadId String
+  lead   Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type   String
+  note   String?
+  date   DateTime @default(now())
+
+  @@map("lead_activities")
+}
+
+// ── Academic Structure ────────────────────────────────────────────────────────
+model AcademicYear {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  isCurrent Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  terms       Term[]
+  enrollments Enrollment[]
+
+  @@map("academic_years")
+}
+
+model Term {
+  id             String       @id @default(cuid())
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  isCurrent      Boolean      @default(false)
+
+  @@map("terms")
+}
+
+model Class {
+  id       String  @id @default(cuid())
+  schoolId String
+  school   School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  name     String
+  ageGroup String?
+  maxSize  Int     @default(15)
+  color    String?
+
+  students Student[]
+
+  @@map("classes")
+}
+
+model Enrollment {
+  id             String           @id @default(cuid())
+  studentId      String
+  student        Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicYearId String
+  academicYear   AcademicYear     @relation(fields: [academicYearId], references: [id])
+  programType    ProgramType
+  enrolledAt     DateTime         @default(now())
+  status         EnrollmentStatus @default(ACTIVE)
+
+  @@map("enrollments")
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  WITHDRAWN
+}
+
+// ── Staff ─────────────────────────────────────────────────────────────────────
+model Staff {
+  id        String    @id @default(cuid())
+  schoolId  String
+  school    School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  role      String
+  photoUrl  String?
+  joinedAt  DateTime?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("staff")
+}
+
+// ── Learning & Progress ───────────────────────────────────────────────────────
+model ProgressRecord {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  domain      String
+  objective   String
+  level       String
+  notes       String?
+  evidenceUrl String?
+  observedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@map("progress_records")
+}
+
+// ── Attendance ────────────────────────────────────────────────────────────────
+model Attendance {
+  id            String           @id @default(cuid())
+  studentId     String
+  student       Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date          DateTime
+  status        AttendanceStatus
+  arrivalTime   DateTime?
+  departureTime DateTime?
+  notes         String?
+  createdAt     DateTime         @default(now())
+
+  @@unique([studentId, date])
+  @@map("attendance")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+  HALF_DAY
+}
+
+// ── Behaviour ─────────────────────────────────────────────────────────────────
+model BehaviourLog {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  antecedent  String?
+  behaviour   String
+  consequence String?
+  intensity   Int?
+  duration    Int?
+  notes       String?
+  observedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@map("behaviour_logs")
+}
+
+// ── Nutrition ─────────────────────────────────────────────────────────────────
+model NutritionLog {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date        DateTime
+  meal        String
+  items       String[] @default([])
+  portionEaten String?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@map("nutrition_logs")
+}
+
+// ── Finance ───────────────────────────────────────────────────────────────────
+model FeeStructure {
+  id          String      @id @default(cuid())
+  schoolId    String
+  school      School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  name        String
+  programType ProgramType
+  amount      Decimal     @db.Decimal(10, 2)
+  currency    String      @default("PKR")
+  frequency   String      @default("monthly")
+
+  invoices Invoice[]
+
+  @@map("fee_structures")
+}
+
+model Invoice {
+  id              String        @id @default(cuid())
+  schoolId        String
+  school          School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  feeStructureId  String?
+  feeStructure    FeeStructure? @relation(fields: [feeStructureId], references: [id])
+  studentName     String
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("PKR")
+  status          InvoiceStatus @default(DRAFT)
+  dueDate         DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("invoices")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+// ── Content / Blog ────────────────────────────────────────────────────────────
+model Blog {
+  id          String     @id @default(cuid())
+  schoolId    String
+  school      School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  title       String
+  slug        String
+  excerpt     String?
+  content     String?
+  coverUrl    String?
+  tags        String[]   @default([])
+  status      BlogStatus @default(DRAFT)
+  views       Int        @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([schoolId, slug])
+  @@map("blogs")
+}
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// ── Campaigns ─────────────────────────────────────────────────────────────────
+model Campaign {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  name      String
+  type      String
+  status    String   @default("draft")
+  subject   String?
+  body      String?
+  audience  String?
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("campaigns")
+}
+
+// ── Audit Log ─────────────────────────────────────────────────────────────────
+model AuditLog {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation("AuditUser", fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  changes   Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
